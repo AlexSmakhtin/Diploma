@@ -71,7 +71,6 @@ public class PromptCreator
 
     private string ResponseFormat(string shortLanguageName)
     {
-
         if (shortLanguageName.Contains("en"))
             return "[\"Answer1\",\"Answer2\",\"Answer3\"]";
         if (shortLanguageName.Contains("ru"))

@@ -63,12 +63,12 @@ public class ChatHub : Microsoft.AspNetCore.SignalR.Hub
         await Clients.Caller.SendAsync("ContinueGame",
             new { messages }, ct);
         var httpClient = httpClientFactory.CreateClient("GigaChat");
-        switch (request.GameState)
+        Console.WriteLine(game.GameState);
+        Console.WriteLine("-----------------------------------------------------------------------------");
+        switch (game.GameState)
         {
             case GameState.WithLocation:
             {
-                Console.WriteLine("request1");
-
                 var locationPrompt = promptCreator.GenerateLocations(request.Language);
                 var aiRequest = new AiRequest
                 {
@@ -88,14 +88,13 @@ public class ChatHub : Microsoft.AspNetCore.SignalR.Hub
                 var response = await aiAssistant.ExecuteRequest<AiResponse>(jsonRequestData, httpClient, ct);
                 var responseData = response.Choices[0].Message;
                 var data = JsonSerializer.Deserialize<LocationsResponse>(responseData.Content);
+
                 await Clients.Caller.SendAsync("ReceiveLocations", data, ct);
                 Console.WriteLine("request1");
                 break;
             }
             case GameState.InProcess:
             {
-                Console.WriteLine("request2");
-
                 var systemPrompt = promptCreator.GameSystemContent();
                 var lastContent = game.AiRecords.OrderBy(e => e.CreationDate).Last().Content;
                 var userPrompt = promptCreator.GetThreeAnswers(lastContent, request.Language);
@@ -120,12 +119,10 @@ public class ChatHub : Microsoft.AspNetCore.SignalR.Hub
                 var data = JsonSerializer.Deserialize<ChoiceResponse>(aiMessage2.Content);
                 await Clients.Caller.SendAsync("ReceiveChoices", data, ct);
                 Console.WriteLine("request2");
-
                 break;
             }
             default:
             {
-                Console.WriteLine("request3");
                 throw new InvalidOperationException("GameState is invalid");
             }
         }
@@ -374,6 +371,11 @@ public class ChatHub : Microsoft.AspNetCore.SignalR.Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        if (exception != null)
+        {
+            await Clients.Caller.SendAsync("Retry", new { exception = exception.Message });
+        }
+
         await Clients.Caller.SendAsync("Notify", new { message = $"{Context.ConnectionId} leaved the chat" });
         await base.OnDisconnectedAsync(exception);
     }

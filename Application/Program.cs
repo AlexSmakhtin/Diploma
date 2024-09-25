@@ -200,7 +200,12 @@ public class Program
             builder.Services.AddSingleton<IPasswordHasherService, PasswordHasherService>();
             builder.Services.AddSingleton<IJwtService, JwtService>();
             builder.Services.AddSignalR()
-                .AddHubOptions<ChatHub>(options => { options.EnableDetailedErrors = true; });
+                .AddHubOptions<ChatHub>(options =>
+                {
+                    options.EnableDetailedErrors = true;
+                    options.ClientTimeoutInterval = TimeSpan.FromMinutes(30);
+                    options.HandshakeTimeout = TimeSpan.FromMinutes(1);
+                });
             builder.Services.AddHttpClient("GigaChat")
                 .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
                 {
